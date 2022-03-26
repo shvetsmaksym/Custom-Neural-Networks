@@ -123,7 +123,7 @@ class Perceptron:
 
 
 class Neuron:
-    def __init__(self, L, layer, i, input_shape=None, input_neurons=None, output_neurons=None, activation_func='BP'):
+    def __init__(self, layer, i, input_shape=None, input_neurons=None, output_neurons=None, activation_func='BP'):
         self.input_shape = input_shape
         self.input_neurons = input_neurons
         self.output_neurons = output_neurons
@@ -139,7 +139,6 @@ class Neuron:
             # 2:L Layers
             self.weights = np.array([-1 for i in range(len(self.input_neurons) + 1)])
 
-        # self.L = L              # liczba warstw sieci
         self.layer = layer      # warstwa
         self.i = i              # numer neuronu w danej warstwie
 
@@ -180,11 +179,12 @@ class Neuron:
         else:
             # Layers 1: L-1
             wgh = np.array([neuron.weights[self.i] for neuron in self.layer.next_layer.neurons])
-            err_signals = np.array([neuron.delta] for neuron in self.layer.next_layer.neurons)
+            err_signals = np.array([neuron.delta for neuron in self.layer.next_layer.neurons])
             self.delta = np.dot(wgh, err_signals) * dv
 
     def update_weights(self, lr=0.01):
-        self.weights += self.weights * lr * self.F_net
+        delta_weights = self.weights * lr * self.F_net
+        self.weights = self.weights + delta_weights
 
     @staticmethod
     def bipolar_threshold(net):
