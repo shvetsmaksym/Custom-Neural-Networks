@@ -20,6 +20,6 @@ weights = np.array([-1, -1, -1])
 
 
 if __name__ == '__main__':
-    perceptron = Perceptron(data=data, weights=weights, thresh=0, outputs=(1, -1))
+    perceptron = Perceptron(data=data, weights=weights, thresh=0, outputs=(1, -1), speed=2)
     perceptron.learn_perceptron()
     perceptron.show_plot()
