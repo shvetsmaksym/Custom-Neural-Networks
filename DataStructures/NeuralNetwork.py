@@ -1,6 +1,7 @@
 from DataStructures.Layers import *
 from random import random, randint
 # from DataStructures.Neurons import Neuron
+from DataStructures.Preprocessing import convert_y_multiclass_to_binary
 
 
 class NeuralNetwork:
@@ -50,7 +51,7 @@ class NeuralNetwork:
             self.output_layer.calculate_error_signals(output=yi)
         if self.hidden_layers:
             for hl in self.hidden_layers:
-                hl.activate_neurons()
+                hl.calculate_error_signals()
         if self.hidden_layers == [] and self.output_layer is None:
             self.input_layer.calculate_error_signals(output=yi)
         else:
@@ -60,13 +61,16 @@ class NeuralNetwork:
         for layer in [self.input_layer] + self.hidden_layers + [self.output_layer]:
             layer.update_weights(lr=lr)
 
-    def calculate_errors(self, validation_data):
+    def calculate_errors_and_bad_classifications(self, validation_data):
         error = 0
+        bad_classes = 0
         if validation_data:
             for xi, yi in zip(validation_data[0], validation_data[1]):
                 self.feed_forward(xi)
                 error += self.output_layer.calculate_error_for_one_sample(yi)
-        return error
+                b_cl = 1 if self.output_layer.calculate_error_for_one_sample(yi, cl=True) else 0
+                bad_classes += b_cl
+        return error, bad_classes
 
     def perform_one_epoch(self, train_x, train_y, lr):
         for xi, yi in zip(train_x, train_y):
@@ -76,17 +80,20 @@ class NeuralNetwork:
 
     def fit(self, train_x, train_y, validation_data=None, lr=0.01, epochs=10):
         for epoch in range(epochs):
-            self.perform_one_epoch(train_x, train_y, lr=lr)
-            error = self.calculate_errors(validation_data=validation_data)
-            print(f"Epoch {epoch}, error: {error}")
+            # Shuffle train data
+            if len(train_y[:0]) > 1:
+                train_data = np.concatenate((train_x, train_y), axis=1)
+            else:
+                # For only binary problems
+                train_data = np.column_stack((train_x, train_y))
+            np.random.shuffle(train_data)
+            train_x_shuffled, train_y_shuffled = train_data[:,:len(train_x[-1,:])], train_data[:,len(train_x[-1,:]):]
 
-
-def convert_y_multiclass_to_binary(y, classes):
-    y_out = np.array([[0 for c in range(classes)] for _ in y])
-    for i, yi, in enumerate(y):
-        y_out[i, yi-1] = 1
-
-    return y_out
+            # Perform epoch and calculate errors
+            self.perform_one_epoch(train_x_shuffled, train_y_shuffled, lr=lr)
+            error, bad_classes = self.calculate_errors_and_bad_classifications(validation_data=validation_data)
+            print('Epoch:{:4}\t Error:{:20}\t Bad classes:{:4}'.format(epoch, error, bad_classes))
+            print([n.weights for n in self.input_layer.neurons])
 
 
 if __name__ == "__main__":

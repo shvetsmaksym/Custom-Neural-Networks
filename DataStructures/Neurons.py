@@ -134,10 +134,10 @@ class Neuron:
 
         if self.input_shape:
             # First Layer
-            self.weights = np.array([-1 for i in range(self.input_shape + 1)])
+            self.weights = np.random.rand(self.input_shape + 1)
         else:
             # 2:L Layers
-            self.weights = np.array([-1 for i in range(len(self.input_neurons) + 1)])
+            self.weights = np.random.rand(len(self.input_neurons) + 1)
 
         self.layer = layer      # warstwa
         self.i = i              # numer neuronu w danej warstwie

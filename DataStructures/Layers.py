@@ -21,9 +21,13 @@ class Layer:
             neuron.activate(inputs=X_row)
 
     def calculate_error_signals(self, output=None):
-        """output parameter corresponds to outputs in the last layer."""
-        for neuron in self.neurons:
-            neuron.calculate_error_signal(output)
+        """output parameter is only for the last layer."""
+        if output is not None:
+            for neuron, out in zip(self.neurons, output):
+                neuron.calculate_error_signal(out)
+        else:
+            for neuron in self.neurons:
+                neuron.calculate_error_signal()
 
     def update_weights(self, lr):
         for neuron in self.neurons:
@@ -44,8 +48,14 @@ class Output(Layer):
         super().__init__(n_neurons, prev_layer, input_shape)
         self.L = -1  # Layer number
 
-    def calculate_error_for_one_sample(self, Y):
-        return sum([neur.F_net - y for neur, y in zip(self.neurons, Y)])
+    def calculate_error_for_one_sample(self, Y, cl=False):
+        """cl = False: return the error for one instance Y.
+        cl = True: return True if classification is correct, return False if not."""
+        if cl and all([neur.activation_function is Neuron.unipolar_sigmoid for neur in self.neurons]):
+            # Works only for unipolar sigmoid activation function.
+            return np.where(Y == 1)[0][0] == np.argmax([neur.F_net for neur in self.neurons])
+        else:
+            return sum([abs(neur.F_net - y) for neur, y in zip(self.neurons, Y)])
 
 
 class Hidden(Layer):
