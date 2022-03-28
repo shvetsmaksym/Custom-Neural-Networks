@@ -10,11 +10,6 @@ class NeuralNetwork:
         self.hidden_layers = []
         self.output_layer = None
 
-        self.train_x = None
-        self.train_y = None
-        self.test_x = None
-        self.test_y = None
-
     def add_input_layer(self, n, input_shape):
         self.input_layer = Input(n_neurons=n, input_shape=input_shape)
 
@@ -57,8 +52,9 @@ class NeuralNetwork:
         else:
             self.input_layer.calculate_error_signals()
 
-    def update_weights(self, lr):
-        for layer in [self.input_layer] + self.hidden_layers + [self.output_layer]:
+    def update_weights(self, lr, xi):
+        self.input_layer.update_weights_for_input(lr=lr, inputs=xi)
+        for layer in self.hidden_layers + [self.output_layer]:
             layer.update_weights(lr=lr)
 
     def calculate_errors_and_bad_classifications(self, validation_data):
@@ -67,8 +63,8 @@ class NeuralNetwork:
         if validation_data:
             for xi, yi in zip(validation_data[0], validation_data[1]):
                 self.feed_forward(xi)
-                error += self.output_layer.calculate_error_for_one_sample(yi)
-                b_cl = 1 if self.output_layer.calculate_error_for_one_sample(yi, cl=True) else 0
+                error += self.output_layer.error_function(Y=yi)
+                b_cl = 1 if self.output_layer.error_function(Y=yi, cl=True) else 0
                 bad_classes += b_cl
         return error, bad_classes
 
@@ -76,7 +72,7 @@ class NeuralNetwork:
         for xi, yi in zip(train_x, train_y):
             self.feed_forward(xi)
             self.propagate_errors(yi)
-            self.update_weights(lr=lr)
+            self.update_weights(xi=xi, lr=lr)
 
     def fit(self, train_x, train_y, validation_data=None, lr=0.01, epochs=10):
         for epoch in range(epochs):
@@ -92,8 +88,8 @@ class NeuralNetwork:
             # Perform epoch and calculate errors
             self.perform_one_epoch(train_x_shuffled, train_y_shuffled, lr=lr)
             error, bad_classes = self.calculate_errors_and_bad_classifications(validation_data=validation_data)
-            print('Epoch:{:4}\t Error:{:20}\t Bad classes:{:4}'.format(epoch, error, bad_classes))
-            print([n.weights for n in self.input_layer.neurons])
+            print('Epoch:{:4}\t Error:{:20}\t Bad classes:{:4}'.format(epoch, round(error, 6), bad_classes))
+            # print([n.weights for n in self.input_layer.neurons])
 
 
 if __name__ == "__main__":

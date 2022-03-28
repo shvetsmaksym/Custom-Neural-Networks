@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from math import exp
-from scipy.misc import derivative
+from DataStructures.ActivationFunctions import UnipolarSigmoid, BipolarSigmoid
 
 
 class Neuron1:
@@ -123,38 +122,24 @@ class Perceptron:
 
 
 class Neuron:
-    def __init__(self, layer, i, input_shape=None, input_neurons=None, output_neurons=None, activation_func='BP'):
+    def __init__(self, layer, i, input_shape=None, input_neurons=None, output_neurons=None,
+                 activation_func=UnipolarSigmoid):
         self.input_shape = input_shape
         self.input_neurons = input_neurons
         self.output_neurons = output_neurons
         self.F_net = 0
         self.delta = 0          # sygnał błędu
-        self.activation_function = None
-        self.choose_activating_function(activation_func)
+        self.activation_function = activation_func(lbd=2)
 
         if self.input_shape:
             # First Layer
-            self.weights = np.random.rand(self.input_shape + 1)
+            self.weights = - np.ones(self.input_shape + 1)
         else:
             # 2:L Layers
-            self.weights = np.random.rand(len(self.input_neurons) + 1)
+            self.weights = - np.ones(len(self.input_neurons) + 1)
 
         self.layer = layer      # warstwa
         self.i = i              # numer neuronu w danej warstwie
-
-    def choose_activating_function(self, func_name='BT'):
-        activation_functions = {'BT': self.bipolar_threshold,  # bipolarna progowa
-                                'BS': self.bipolar_sigmoid,  # bipolarna sigmoidalna
-                                'UT': self.unipolar_threshold,  # unipolarna progowa
-                                'US': self.unipolar_sigmoid  # unipolarna sigmoidalna
-                                }
-
-        try:
-            self.activation_function = activation_functions[func_name]
-        except KeyError:
-            print(f"{func_name} activation function is not found.\n"
-                  "I am going to use BP (bipolar_threshold) instead.")
-            self.activation_function = self.bipolar_threshold
 
     def activate(self, inputs=None):
         """Activate neuron with activation function.
@@ -168,38 +153,25 @@ class Neuron:
             inputs_with_bias = np.insert(values, 0, 1)
 
         net = np.dot(inputs_with_bias, self.weights)
-        self.F_net = self.activation_function(net)
+        self.F_net = self.activation_function.func(net)
 
     def calculate_error_signal(self, out=None):
-        dv = derivative(self.activation_function, self.F_net, dx=1e-6)
         if out is not None:
             # out parameter is only given in the last layer
-            err = out - self.F_net
-            self.delta = err * dv
+            self.delta = out - self.F_net
         else:
             # Layers 1: L-1
             wgh = np.array([neuron.weights[self.i] for neuron in self.layer.next_layer.neurons])
             err_signals = np.array([neuron.delta for neuron in self.layer.next_layer.neurons])
-            self.delta = np.dot(wgh, err_signals) * dv
+            self.delta = np.dot(wgh, err_signals)
 
-    def update_weights(self, lr=0.01):
-        delta_weights = self.weights * lr * self.F_net
+    def update_weights(self, lr=0.01, inputs=None):
+        if inputs is None:
+            inputs = np.array([neuron.F_net for neuron in self.layer.prev_layer.neurons])
+        inputs = np.insert(inputs, 0, 1)
+        delta_weights = np.array([lr * self.delta * self.activation_function.derivative(inp) * inp for inp in inputs])
         self.weights = self.weights + delta_weights
 
-    @staticmethod
-    def bipolar_threshold(net):
-        return 1 if net >= 0 else -1
 
-    @staticmethod
-    def bipolar_sigmoid(net, lbd=2):
-        return 2 / (1 + exp(-lbd * net)) - 1
-
-    @staticmethod
-    def unipolar_threshold(net):
-        return 1 if net >= 0 else 0
-
-    @staticmethod
-    def unipolar_sigmoid(net, lbd=2):
-        return 1 / (1 + exp(-lbd * net))
 
 
