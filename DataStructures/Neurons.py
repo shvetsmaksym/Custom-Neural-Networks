@@ -122,10 +122,13 @@ class Perceptron:
 
 
 class Neuron:
-    def __init__(self, layer, i, input_shape=None, input_neurons=None, output_neurons=None,
+    def __init__(self, layer, i, input_shape=None, output_neurons=None,
                  activation_func=UnipolarSigmoid):
+
+        self.layer = layer      # warstwa
+        self.i = i              # numer neuronu w danej warstwie
+
         self.input_shape = input_shape
-        self.input_neurons = input_neurons
         self.output_neurons = output_neurons
         self.F_net = 0
         self.delta = 0          # sygnał błędu
@@ -133,13 +136,10 @@ class Neuron:
 
         if self.input_shape:
             # First Layer
-            self.weights = - np.ones(self.input_shape + 1)
+            self.weights = (np.random.random(self.input_shape + 1) - 1/2) * 2
         else:
             # 2:L Layers
-            self.weights = - np.ones(len(self.input_neurons) + 1)
-
-        self.layer = layer      # warstwa
-        self.i = i              # numer neuronu w danej warstwie
+            self.weights = (np.random.random(len(self.layer.prev_layer.neurons) + 1) - 1/2) * 2
 
     def activate(self, inputs=None):
         """Activate neuron with activation function.
@@ -149,7 +149,7 @@ class Neuron:
             inputs_with_bias = np.insert(inputs, 0, 1)
         else:
             # 2:L layers - inputs are neurons
-            values = np.array([i.F_net for i in self.input_neurons.neurons])
+            values = np.array([i.F_net for i in self.layer.prev_layer.neurons])
             inputs_with_bias = np.insert(values, 0, 1)
 
         net = np.dot(inputs_with_bias, self.weights)
@@ -169,7 +169,7 @@ class Neuron:
         if inputs is None:
             inputs = np.array([neuron.F_net for neuron in self.layer.prev_layer.neurons])
         inputs = np.insert(inputs, 0, 1)
-        delta_weights = np.array([lr * self.delta * self.activation_function.derivative(inp) * inp for inp in inputs])
+        delta_weights = np.array([lr * self.delta * self.activation_function.derivative(self.F_net) * inp for inp in inputs])
         self.weights = self.weights + delta_weights
 
 

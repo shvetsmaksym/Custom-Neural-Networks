@@ -7,7 +7,7 @@ class Layer:
         if prev_layer is not None:
             self.prev_layer = prev_layer
             self.prev_layer.next_layer = self
-            self.neurons = [Neuron(layer=self, i=i + 1, input_neurons=self.prev_layer) for i
+            self.neurons = [Neuron(layer=self, i=i + 1) for i
                             in range(n_neurons)]
         else:
             # Only for first layer
