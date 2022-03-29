@@ -20,4 +20,4 @@ class BipolarSigmoid:
         return 2 / (1 + exp(-self.lbd * x)) - 1
 
     def derivative(self, x):
-        return self.lbd *  1/2 * (1 - self.func(x) ** 2)
+        return self.lbd * 1/2 * (1 - self.func(x) ** 2)

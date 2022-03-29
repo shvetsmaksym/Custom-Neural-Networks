@@ -1,6 +1,5 @@
 from DataStructures.Layers import *
 from random import random, randint
-# from DataStructures.Neurons import Neuron
 from DataStructures.Preprocessing import convert_y_multiclass_to_binary
 
 
@@ -88,10 +87,9 @@ class NeuralNetwork:
             # Perform epoch and calculate errors
             self.perform_one_epoch(train_x_shuffled, train_y_shuffled, lr=lr)
             error, bad_classes = self.calculate_errors_and_bad_classifications(validation_data=validation_data)
-            print('Epoch:{:4}\t Error:{:20}\t Bad classes:{:4}'.format(epoch, round(error, 6), bad_classes))
+            print('Epoch:{:4}\t Error:{:20}\t Bad classes:{:4}'.format(epoch + 1, round(error, 6), bad_classes))
             if bad_classes == 0:
                 break
-            # print([n.weights for n in self.input_layer.neurons])
 
 
 if __name__ == "__main__":
