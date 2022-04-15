@@ -60,13 +60,13 @@ class Output(Layer):
         if cl:
             return Y != round(self.neurons[0].F_net)
         else:
-            return abs(Y - self.neurons[0].F_net)
+            return 1/2 * (Y - self.neurons[0].F_net) ** 2
 
     def calculate_error_for_multiclass(self, Y, cl=False):
         if cl:
             return np.where(Y == 1)[0][0] != np.argmax([neur.F_net for neur in self.neurons])
         else:
-            return sum([abs(neur.F_net - y) for neur, y in zip(self.neurons, Y)])
+            return 1/2 * sum([(neur.F_net - y) ** 2 for neur, y in zip(self.neurons, Y)])
 
 
 class Hidden(Layer):
