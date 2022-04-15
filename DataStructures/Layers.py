@@ -7,11 +7,11 @@ class Layer:
         if prev_layer is not None:
             self.prev_layer = prev_layer
             self.prev_layer.next_layer = self
-            self.neurons = [Neuron(layer=self, i=i + 1, input_neurons=self.prev_layer, activation_func='US') for i
+            self.neurons = [Neuron(layer=self, i=i + 1) for i
                             in range(n_neurons)]
         else:
             # Only for first layer
-            self.neurons = [Neuron(layer=self, i=i + 1, input_shape=input_shape, activation_func='US') for i
+            self.neurons = [Neuron(layer=self, i=i + 1, input_shape=input_shape) for i
                             in range(n_neurons)]
 
         self.next_layer = None
@@ -42,18 +42,29 @@ class Input(Layer):
         super().__init__(n_neurons, prev_layer, input_shape)
         self.L = 1
 
+    def update_weights_for_input(self, lr, inputs):
+        for neuron in self.neurons:
+            neuron.update_weights(lr=lr, inputs=inputs)
+
 
 class Output(Layer):
     def __init__(self, n_neurons, prev_layer, input_shape=None):
         super().__init__(n_neurons, prev_layer, input_shape)
         self.L = -1  # Layer number
+        self.error_function = self.calculate_error_for_binary if n_neurons == 1 \
+            else self.calculate_error_for_multiclass
 
-    def calculate_error_for_one_sample(self, Y, cl=False):
+    def calculate_error_for_binary(self, Y, cl=False):
         """cl = False: return the error for one instance Y.
         cl = True: return True if classification is correct, return False if not."""
-        if cl and all([neur.activation_function is Neuron.unipolar_sigmoid for neur in self.neurons]):
-            # Works only for unipolar sigmoid activation function.
-            return np.where(Y == 1)[0][0] == np.argmax([neur.F_net for neur in self.neurons])
+        if cl:
+            return Y != round(self.neurons[0].F_net)
+        else:
+            return abs(Y - self.neurons[0].F_net)
+
+    def calculate_error_for_multiclass(self, Y, cl=False):
+        if cl:
+            return np.where(Y == 1)[0][0] != np.argmax([neur.F_net for neur in self.neurons])
         else:
             return sum([abs(neur.F_net - y) for neur, y in zip(self.neurons, Y)])
 
