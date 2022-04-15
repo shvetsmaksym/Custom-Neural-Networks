@@ -76,7 +76,7 @@ class NeuralNetwork:
     def fit(self, train_x, train_y, validation_data=None, lr=0.01, epochs=10):
         for epoch in range(epochs):
             # Shuffle train data
-            if len(train_y[:0]) > 1:
+            if len(train_y[:, 0]) > 1:
                 train_data = np.concatenate((train_x, train_y), axis=1)
             else:
                 # For only binary problems
@@ -88,8 +88,8 @@ class NeuralNetwork:
             self.perform_one_epoch(train_x_shuffled, train_y_shuffled, lr=lr)
             error, bad_classes = self.calculate_errors_and_bad_classifications(validation_data=validation_data)
             print('Epoch:{:4}\t Error:{:20}\t Bad classes:{:4}'.format(epoch + 1, round(error, 6), bad_classes))
-            if bad_classes == 0:
-                break
+            # if bad_classes == 0:
+            #     break
 
 
 if __name__ == "__main__":
