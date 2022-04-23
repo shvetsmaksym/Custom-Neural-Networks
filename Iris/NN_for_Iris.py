@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from DataStructures.NeuralNetwork import NeuralNetwork
-from DataStructures.Preprocessing import convert_y_multiclass_to_binary, normalize, split_into_train_and_test_sets, \
+from DataStructures.Preprocessing import one_hot_encoding, normalize, split_into_train_and_test_sets, \
     check_if_classes_balanced
 
 if __name__ == "__main__":
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         df.loc[df.Class == unique, "Class"] = i
 
     Y = Y.to_numpy()
-    Y = convert_y_multiclass_to_binary(Y, classes=len(df.iloc[:, 4].unique()))
+    Y = one_hot_encoding(Y, classes=len(df.iloc[:, 4].unique()))
     X = X.to_numpy()
     X = normalize(X)
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Build and train model
     model = NeuralNetwork()
-    model.add_input_layer(n=32, input_shape=4)
+    model.add_input_layer(n=4, input_shape=4)
     model.add_output_layer(n=3)
     model.fit(train_X, train_y, validation_data=(test_X, test_y), lr=0.01, epochs=10000)
 

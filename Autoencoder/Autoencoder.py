@@ -34,7 +34,9 @@ def process_image(path, block_size=8):
      Third and forth dimensions correspond to coordinates of blocks.
      Fifth dimension is RGB representation.
 
-     In our example it is (32 x 32 x 8 x 8 x 3)."""
+     In our example it is (32 x 32 x 8 x 8 x 3).
+
+     Also rescales values from [0, 255] to [0.1, 0.9]."""
 
     img = Image.open(path)
     img = img.convert('RGB')
@@ -55,14 +57,20 @@ def process_image(path, block_size=8):
 if __name__ == "__main__":
     # Preprocessing
     img1_blocks = process_image("train_data/img1.png")
-    red = img1_blocks[:,:,:,:,0].reshape(32**2, 8**2)
+    red = img1_blocks[:, :, :, :, 0].reshape(32**2, 8**2)
 
     # Define model
     encoder = NeuralNetwork()
     encoder.add_input_layer(n=32, input_shape=64)
     encoder.add_output_layer(n=64)
 
-    encoder.fit(train_x=red, train_y=red, epochs=50)
+    encoder.fit(train_x=red, train_y=red, epochs=5)
 
+    # Testing
+    img2_blocks = process_image("train_data/img1.png")
+    red2 = img2_blocks[:, :, :, :, 0].reshape(32 ** 2, 8 ** 2)
+
+
+    encoder.feed_forward(red2)
 
     print("Done.")

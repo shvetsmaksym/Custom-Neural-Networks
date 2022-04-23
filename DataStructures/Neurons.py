@@ -132,7 +132,7 @@ class Neuron:
         self.output_neurons = output_neurons
         self.F_net = 0
         self.delta = 0          # sygnał błędu
-        self.activation_function = activation_func(lbd=2)
+        self.activation_function = activation_func(lbd=1.6)
 
         if self.input_shape:
             # First Layer
@@ -166,9 +166,13 @@ class Neuron:
             self.delta = np.dot(wgh, err_signals)
 
     def update_weights(self, lr=0.01, inputs=None):
-        if inputs is None:
+        if self.layer.L != 1:
             inputs = np.array([neuron.F_net for neuron in self.layer.prev_layer.neurons])
+
+        # Add bias = 1
         inputs = np.insert(inputs, 0, 1)
+
+        # Calculate deltas for weights and update weights
         delta_weights = np.array([lr * self.delta * self.activation_function.derivative(self.F_net) * inp for inp in inputs])
         self.weights = self.weights + delta_weights
 

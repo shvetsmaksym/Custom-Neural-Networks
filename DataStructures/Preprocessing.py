@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def convert_y_multiclass_to_binary(y, classes):
+def one_hot_encoding(y, classes):
     y_out = np.zeros((len(y), classes))
     for i, yi, in enumerate(y):
         y_out[i, yi] = 1
