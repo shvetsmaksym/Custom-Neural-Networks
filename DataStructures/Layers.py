@@ -51,22 +51,15 @@ class Output(Layer):
     def __init__(self, n_neurons, prev_layer, input_shape=None):
         super().__init__(n_neurons, prev_layer, input_shape)
         self.L = -1  # Layer number
-        self.error_function = self.calculate_error_for_binary if n_neurons == 1 \
-            else self.calculate_error_for_multiclass
 
-    def calculate_error_for_binary(self, Y, cl=False):
-        """cl = False: return the error for one instance Y.
-        cl = True: return True if classification is correct, return False if not."""
-        if cl:
-            return Y != round(self.neurons[0].F_net)
-        else:
-            return 1/2 * (Y - self.neurons[0].F_net) ** 2
+    def calculate_error(self, Y):
+        return sum([abs(neur.F_net - y) for neur, y in zip(self.neurons, Y)])
 
-    def calculate_error_for_multiclass(self, Y, cl=False):
-        if cl:
-            return np.where(Y == 1)[0][0] != np.argmax([neur.F_net for neur in self.neurons])
-        else:
-            return 1/2 * sum([(neur.F_net - y) ** 2 for neur, y in zip(self.neurons, Y)])
+    def is_correct_class(self, Y, binary=True):
+        if len(self.neurons) > 1:
+            return np.where(Y == 1)[0][0] == np.argmax([neur.F_net for neur in self.neurons])
+        elif len(self.neurons) == 1:
+            return Y == round(self.neurons[0].F_net)
 
 
 class Hidden(Layer):

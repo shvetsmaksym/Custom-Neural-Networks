@@ -11,11 +11,17 @@ if __name__ == "__main__":
 
     train_x, train_y = data[:, :2], data[:, 2]
 
-    # # Train model
+    # Define model
     model = NeuralNetwork()
     model.add_input_layer(n=2, input_shape=2)
     model.add_output_layer(n=1)
-    model.fit(train_x, train_y, validation_data=(train_x, train_y), lr=0.01, epochs=100000)
+
+    # Compile model
+    model.set_metrics(metrics=['mse', 'acc'])
+    model.set_early_stopping(patience=500, metric_to_monitor='mse', min_delta=0.0001)
+
+    # Fit model
+    model.fit(train_x, train_y, validation_data=(train_x, train_y), lr=0.03, epochs=10000)
 
     # Prepare plot
     x1 = np.linspace(-2, 2, 100)
@@ -27,7 +33,7 @@ if __name__ == "__main__":
     for i, x1_ in enumerate(x1):
         for j, x2_ in enumerate(x2):
             model.feed_forward(xi=np.array([x1_, x2_]))
-            Y[i, j] = round(model.output_layer.neurons[0].F_net)
+            Y[i, j] = model.output_layer.neurons[0].F_net
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
