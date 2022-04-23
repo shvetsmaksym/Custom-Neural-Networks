@@ -16,19 +16,21 @@ class Metrics:
         self.metrics_to_use = {metric: self.metrics_functions[metric] for metric in metrics_list}
         self.neural_net.metric_history = {m: [] for m in metrics_list}
 
-    def calculate_metrics(self):
+    def calculate_metrics(self, verbose=0):
         for func in self.metrics_to_use.values():
-            func()
+            func(verbose)
 
-    def accuracy(self):
+    def accuracy(self, verbose=0):
         res = np.average(self.neural_net.basic_metrics_history['correct_classifications'][-1])
         self.neural_net.metric_history['acc'].append(res)
-        print(f"Accuracy: {round(res, 4)}", end="\t")
+        if verbose:
+            print(f"Accuracy: {round(res, 4)}", end="\t")
 
-    def MSE(self):
+    def MSE(self, verbose=0):
         res = 1/2 * (np.average(self.neural_net.basic_metrics_history['errors'][-1]) ** 2)
         self.neural_net.metric_history['mse'].append(res)
-        print(f"MSE: {round(res,4)}", end="\t")
+        if verbose:
+            print(f"MSE: {round(res,4)}", end="\t")
 
 
 class EarlyStopping:

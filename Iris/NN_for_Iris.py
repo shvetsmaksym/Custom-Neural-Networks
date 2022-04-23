@@ -28,6 +28,8 @@ if __name__ == "__main__":
     model = NeuralNetwork()
     model.add_input_layer(n=4, input_shape=4)
     model.add_output_layer(n=3)
-    model.fit(train_X, train_y, validation_data=(test_X, test_y), lr=0.01, epochs=10000)
+
+    model.set_metrics(metrics=['mse', 'acc'])
+    model.fit(train_X, train_y, validation_data=(test_X, test_y), lr=0.03, epochs=1000)
 
     print("Finish.")

@@ -83,7 +83,7 @@ class NeuralNetwork:
 
         if validation_data:
             for i, xi in enumerate(validation_data[0]):
-                yi = np.array([validation_data[1][i]])
+                yi = np.array([validation_data[1][i]]).flatten()
                 self.feed_forward(xi)
 
                 errors[i] = self.output_layer.calculate_error(Y=yi)
@@ -91,11 +91,13 @@ class NeuralNetwork:
 
         return errors, correct_classifications
 
-    def calculate_metrics(self):
-        print(f"\nEpoch {len(self.basic_metrics_history['errors'])}:", end='\t')
-        err = self.basic_metrics_history['errors'][-1]
-        corr_cl = self.basic_metrics_history['correct_classifications'][-1]
-        self.metrics.calculate_metrics()
+    def calculate_metrics(self, epoch, freq=10):
+        if epoch % freq == 0:
+            print(f"\nEpoch {epoch}...", end='\t')
+            verbose = 1
+        else:
+            verbose = 0
+        self.metrics.calculate_metrics(verbose=verbose)
 
     def perform_one_epoch(self, train_x, train_y, lr):
         for xi, yi in zip(train_x, train_y):
@@ -121,7 +123,7 @@ class NeuralNetwork:
             err, corr_cl = self.calculate_errors(validation_data=validation_data)
             self.basic_metrics_history["errors"].append(err)
             self.basic_metrics_history["correct_classifications"].append(corr_cl)
-            self.calculate_metrics()
+            self.calculate_metrics(epoch)
 
             # Check for early stopping
             if self.early_stopping is not None:
