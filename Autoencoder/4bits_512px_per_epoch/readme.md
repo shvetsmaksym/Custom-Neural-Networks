@@ -1,0 +1,1 @@
+# Progress of training autoencoder for 4 bits discretization and 512 (out of 12288) samples per epoch

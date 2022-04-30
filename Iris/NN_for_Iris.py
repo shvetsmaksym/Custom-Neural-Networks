@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from DataStructures.NeuralNetwork import NeuralNetwork
 from DataStructures.Preprocessing import one_hot_encoding, normalize, split_into_train_and_test_sets, \
     check_if_classes_balanced
@@ -28,6 +29,17 @@ if __name__ == "__main__":
     model = NeuralNetwork()
     model.add_input_layer(n=4, input_shape=4)
     model.add_output_layer(n=3)
-    model.fit(train_X, train_y, validation_data=(test_X, test_y), lr=0.01, epochs=10000)
+
+    model.add_metrics(metrics=['mse', 'acc'])
+    model.add_early_stopping(patience=200, monitor='mse', min_delta=0.001)
+    model.fit(train_X, train_y, validation_data=(test_X, test_y), lr=0.03, epochs=1000)
+
+    fig, axs = plt.subplots(1, 2)
+    axs[0].plot(model.metric_history['mse'], color='r', markersize=10)
+    axs[0].set_title("MSE")
+    axs[1].plot(model.metric_history['acc'], color='b', markersize=510)
+    axs[1].set_title("Accuracy")
+
+    plt.show()
 
     print("Finish.")

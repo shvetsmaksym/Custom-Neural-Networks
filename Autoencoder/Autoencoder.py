@@ -1,5 +1,7 @@
 from PIL import Image
 import numpy as np
+from astropy.nddata import reshape_as_blocks
+import matplotlib.pyplot as plt
 
 from DataStructures.NeuralNetwork import NeuralNetwork
 
@@ -28,15 +30,11 @@ def create_image():
     img.show()
 
 
-def process_image(path, block_size=8):
-    """Return 5-dimensional array. Divide image into blocks of (block_size * block_size) dimensions.
-     First and second dimensions correspond to indexes of blocks.
-     Third and forth dimensions correspond to coordinates of blocks.
-     Fifth dimension is RGB representation.
+def image_to_blocks(path, bs=8):
+    """Return the array of flatten blocks of bs**2 size.
+    For RGB image 256x256 px and 8x8 blocks it's array of shape (3072, 64). (3x32x32, 8x8)
 
-     In our example it is (32 x 32 x 8 x 8 x 3).
-
-     Also rescales values from [0, 255] to [0.1, 0.9]."""
+    Also rescale values from [0, 255] to [0.1, 0.9]."""
 
     img = Image.open(path)
     img = img.convert('RGB')
@@ -44,33 +42,74 @@ def process_image(path, block_size=8):
     np_image = np.asarray(img)
     np_image = np_image * 0.8 / 255 + 0.1  # Rescaling [0.1, 0.9]
 
-    width, height = np_image.shape[0] // block_size, np_image.shape[1] // block_size
-    blocks = np_image.reshape(width, height, block_size, block_size, 3)
+    width, height = np_image.shape[0] // bs, np_image.shape[1] // bs
 
-    # decoded_blocks = blocks.reshape(256, 256, 3)
-    # im = Image.fromarray(decoded_blocks)
-    # im.show()
+    blocks = reshape_as_blocks(np_image, (bs, bs, 3))
+    blocks_ = blocks.swapaxes(2, 5)
+    blocks_ = blocks_.reshape(3 * width * height, bs**2)
 
-    return blocks
+    return blocks_
+
+
+def reconstruct_flatten(img, width=None, height=None):
+    """width, height - number of blocks widely and highly respectivelly."""
+    n_blocks = img.shape[0] // 3
+    block_length = int(img.shape[1] ** (1 / 2))
+    if width is None and height is None:
+        width, height = int(n_blocks ** (1 / 2)), int(n_blocks ** (1 / 2))
+
+    img = img.reshape(n_blocks, 3, img.shape[1])
+    img = img.swapaxes(1, 2)
+    img = img.reshape(height, width, block_length, block_length, 3)
+    img = img.swapaxes(1, 2).reshape(height * block_length, width * block_length, 3)
+
+    return img
+
+
+# def reconstruct_image(flatten_blocks, img_size=(256, 256, 3)):
+#     return flatten_blocks.reshape(img_size)
 
 
 if __name__ == "__main__":
     # Preprocessing
-    img1_blocks = process_image("train_data/img1.png")
-    red = img1_blocks[:, :, :, :, 0].reshape(32**2, 8**2)
+    img1 = image_to_blocks("train_data/img1.png")
+    img2 = image_to_blocks("train_data/img2.png")
+    img3 = image_to_blocks("train_data/img3.png")
+    img4 = image_to_blocks("train_data/img4.png")
+    train_set = np.concatenate((img1, img2, img3, img4))
+    print("Conversion from images to blocks completed.")
 
     # Define model
-    encoder = NeuralNetwork()
-    encoder.add_input_layer(n=32, input_shape=64)
+    encoder = NeuralNetwork(classification_problem=False)
+    encoder.add_input_layer(n=32, input_shape=64, discretization=True)
     encoder.add_output_layer(n=64)
 
-    encoder.fit(train_x=red, train_y=red, epochs=5)
+    encoder.add_metrics(metrics=['mse'])
+    print("Model defining complete.")
 
-    # Testing
-    img2_blocks = process_image("train_data/img1.png")
-    red2 = img2_blocks[:, :, :, :, 0].reshape(32 ** 2, 8 ** 2)
+    def fit_and_plot(ep=1):
+        encoder.fit(train_x=train_set, train_y=train_set, validation_data=(train_set[:256], train_set[:256]), epochs=ep)
 
+        # Testing
+        test_images = [img1, img2, img3, img4]
+        flatten_blocks = [np.zeros((3*32*32, 8*8)) for _ in test_images]
 
-    encoder.feed_forward(red2)
+        for i, img in enumerate(test_images):
+            for j, block in enumerate(img):
+                encoder.feed_forward(block)
+                flatten_blocks[i][j] = np.array([neu.F_net for neu in encoder.output_layer.neurons])
+
+        im1_rec, im2_rec, im3_rec, im4_rec = reconstruct_flatten(flatten_blocks[0]), reconstruct_flatten(flatten_blocks[1]), \
+                                             reconstruct_flatten(flatten_blocks[2]), reconstruct_flatten(flatten_blocks[3])
+        fig, ax = plt.subplots(2, 2)
+        ax[0][0].imshow(im1_rec)
+        ax[0][1].imshow(im2_rec)
+        ax[1][0].imshow(im3_rec)
+        ax[1][1].imshow(im4_rec)
+        plt.show()
+
+    for _ in range(10):
+        # Żeby rysowało wyniki wytrenowanej sieci po każdej epoce
+        fit_and_plot(ep=1)
 
     print("Done.")

@@ -1,0 +1,1 @@
+# Progress of training autoencoder for 2 bits discretization
