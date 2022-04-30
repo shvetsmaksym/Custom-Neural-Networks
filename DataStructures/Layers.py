@@ -1,27 +1,33 @@
 import numpy as np
 from DataStructures.Neurons import Neuron
+from DataStructures.ActivationFunctions import *
 
 
 class Layer:
-    def __init__(self, n_neurons, prev_layer, input_shape):
+    def __init__(self, n_neurons, prev_layer, input_shape, activate=UnipolarSigmoid, discretization=False):
         if prev_layer is not None:
             self.prev_layer = prev_layer
             self.prev_layer.next_layer = self
-            self.neurons = [Neuron(layer=self, i=i + 1) for i
+            self.neurons = [Neuron(layer=self, i=i + 1, activation_func=activate) for i
                             in range(n_neurons)]
         else:
             # Only for first layer
-            self.neurons = [Neuron(layer=self, i=i + 1, input_shape=input_shape) for i
+            self.neurons = [Neuron(layer=self, i=i + 1, activation_func=activate, input_shape=input_shape) for i
                             in range(n_neurons)]
 
         self.next_layer = None
+
+        self.discretize_fnets = discretization
 
     def activate_neurons(self, X_row=None):
         for neuron in self.neurons:
             neuron.activate(inputs=X_row)
 
+        if self.discretize_fnets:
+            self.discretization()
+
     def calculate_error_signals(self, output=None):
-        """output parameter is only for the last layer."""
+        """output is only given in the last layer."""
         if output is not None:
             for neuron, out in zip(self.neurons, output):
                 neuron.calculate_error_signal(out)
@@ -33,13 +39,27 @@ class Layer:
         for neuron in self.neurons:
             neuron.update_weights(lr=lr)
 
+    def discretization(self, bits=4, r=(0, 1)):
+        """Convert continuous value from [0, 1] range into discrete value.
+        E.g. if bits == 1:
+                [0, 0.5) -> 0
+                [0.5, 1] -> 1
+        """
+        F_nets = np.array([neu.F_net for neu in self.neurons])
+        range_ = r[1] - r[0]
+        discrete_thresholds = np.array([range_ / i for i in range(2**bits, 0, -1)])
+        discrete_fnets = np.digitize(F_nets, discrete_thresholds)
+
+        for neu, d_fnet in zip(self.neurons, discrete_fnets):
+            neu.F_net = d_fnet
+
     def __len__(self):
         return len(self.neurons)
 
 
 class Input(Layer):
-    def __init__(self, n_neurons, input_shape, prev_layer=None):
-        super().__init__(n_neurons, prev_layer, input_shape)
+    def __init__(self, n_neurons, input_shape, prev_layer=None, activate=UnipolarSigmoid, discretization=False):
+        super().__init__(n_neurons, prev_layer, input_shape, activate, discretization)
         self.L = 1
 
     def update_weights_for_input(self, lr, inputs):
@@ -48,23 +68,17 @@ class Input(Layer):
 
 
 class Output(Layer):
-    def __init__(self, n_neurons, prev_layer, input_shape=None):
-        super().__init__(n_neurons, prev_layer, input_shape)
+    def __init__(self, n_neurons, prev_layer, input_shape=None, activate=UnipolarSigmoid, discretization=False):
+        super().__init__(n_neurons, prev_layer, input_shape, activate, discretization)
         self.L = -1  # Layer number
 
     def calculate_error(self, Y):
         return sum([abs(neur.F_net - y) for neur, y in zip(self.neurons, Y)])
 
-    def is_correct_class(self, Y, binary=True):
-        if len(self.neurons) > 1:
-            return np.where(Y == 1)[0][0] == np.argmax([neur.F_net for neur in self.neurons])
-        elif len(self.neurons) == 1:
-            return Y == round(self.neurons[0].F_net)
-
 
 class Hidden(Layer):
-    def __init__(self, L, n_neurons, prev_layer, input_shape=None):
-        super().__init__(n_neurons, prev_layer, input_shape)
+    def __init__(self, L, n_neurons, prev_layer, input_shape=None, activate=UnipolarSigmoid, discretization=False):
+        super().__init__(n_neurons, prev_layer, input_shape, activate, discretization)
         self.L = L  # Layer number
 
 

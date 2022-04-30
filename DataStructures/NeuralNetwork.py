@@ -1,36 +1,39 @@
 from DataStructures.Layers import *
-from random import random
-from collections import defaultdict
+from random import random, sample
 from DataStructures.Preprocessing import one_hot_encoding
-from DataStructures.Callbacks import Metrics, EarlyStopping
+from DataStructures.Callbacks import Metrics, EarlyStopping, is_correct_class, print_progress_bar
 
 
 class NeuralNetwork:
-    def __init__(self):
+    def __init__(self, classification_problem=True):
         self.input_layer = None
         self.hidden_layers = []
         self.output_layer = None
 
-        self.basic_metrics_history = {"errors": [], "correct_classifications": []}
-        self.metrics = Metrics(neural_net=self)
-        self.metrics.set_metrics_to_use(metrics_list=['mse'])
+        if classification_problem:
+            self.basic_metrics_history = {"errors": [], "correct_classifications": []}
+        else:
+            self.basic_metrics_history = {"errors": []}
+
+        self.metrics = Metrics(neural_net=self, metrics=['mse'])
         self.metric_history = {}
 
         self.early_stopping = None
 
-    def set_metrics(self, metrics=None):
+        self.classification_problem = classification_problem
+
+    def add_metrics(self, metrics=None):
         if metrics is not None:
             try:
-                self.metrics.set_metrics_to_use(metrics)
+                self.metrics = Metrics(neural_net=self, metrics=metrics)
             except KeyError as e:
-                print(e, "\nMetrics are invalid.")
+                print(e, "\nSome of the given metrics is invalid.")
 
-    def set_early_stopping(self, patience, metric_to_monitor='mse', min_delta=0.01):
-        self.early_stopping = EarlyStopping(self)
-        self.early_stopping.set_early_stopping(patience=patience, monitor=metric_to_monitor, min_delta=min_delta)
+    def add_early_stopping(self, patience, monitor='mse', min_delta=0.01):
+        self.early_stopping = EarlyStopping(self, patience=patience, monitor=monitor, min_delta=min_delta)
 
-    def add_input_layer(self, n, input_shape):
-        self.input_layer = Input(n_neurons=n, input_shape=input_shape)
+    def add_input_layer(self, n, input_shape, discretization=False):
+        self.input_layer = Input(n_neurons=n, input_shape=input_shape, discretization=discretization)
 
     def add_hidden_layer(self, L, n):
         if self.hidden_layers:
@@ -77,33 +80,45 @@ class NeuralNetwork:
         for layer in self.hidden_layers + [self.output_layer]:
             layer.update_weights(lr=lr)
 
-    def calculate_errors(self, validation_data):
+    def calculate_errors(self, validation_data, classification_problem=True):
         errors = np.zeros(len(validation_data[0]))
-        correct_classifications = np.zeros(len(validation_data[0]))
+        res = [np.zeros(len(self.output_layer.neurons)) for _ in range(len(validation_data[1]))]
 
         if validation_data:
             for i, xi in enumerate(validation_data[0]):
                 yi = np.array([validation_data[1][i]]).flatten()
+
                 self.feed_forward(xi)
+                res[i] = np.array([neuron.F_net for neuron in self.output_layer.neurons])
+                errors[i] = np.sum(abs(yi - res[i]))
 
-                errors[i] = self.output_layer.calculate_error(Y=yi)
-                correct_classifications[i] = 1 if self.output_layer.is_correct_class(Y=yi) else 0
+            if self.classification_problem:
+                correct_classifications = np.zeros(len(validation_data[0]))
+                for i in range(len(validation_data[1])):
+                    yi = np.array([validation_data[1][i]]).flatten()
+                    correct_classifications[i] = 1 if is_correct_class(F_nets=res[i], Y=yi) else 0
+                return errors, correct_classifications
+            else:
+                return errors, None
 
-        return errors, correct_classifications
-
-    def calculate_metrics(self, epoch, freq=10):
+    def calculate_metrics(self, epoch, freq=1):
         if epoch % freq == 0:
-            print(f"\nEpoch {epoch}...", end='\t')
+            print("{0:10}".format(f"Epoch {epoch + 1}"), end='\t')
             verbose = 1
         else:
             verbose = 0
         self.metrics.calculate_metrics(verbose=verbose)
 
-    def perform_one_epoch(self, train_x, train_y, lr):
-        for xi, yi in zip(train_x, train_y):
+    def perform_one_epoch(self, epoch, train_x, train_y, lr):
+        count = 0
+        train_samples = sample([x for x in range(len(train_x))], 2048)
+        for xi, yi in zip(train_x[train_samples], train_y[train_samples]):
             self.feed_forward(xi)
             self.propagate_errors(yi)
             self.update_weights(xi=xi, lr=lr)
+            count += 1
+            if count % 16 == 0:
+                print_progress_bar(text=f"Epoch {epoch + 1}", a=count, b=len(train_x))
 
     def fit(self, train_x, train_y, validation_data=None, lr=0.01, epochs=10):
         for epoch in range(epochs):
@@ -114,15 +129,16 @@ class NeuralNetwork:
                 # For only binary problems
                 train_data = np.column_stack((train_x, train_y))
             np.random.shuffle(train_data)
-            train_x_shuffled, train_y_shuffled = train_data[:,:len(train_x[-1,:])], train_data[:,len(train_x[-1,:]):]
+            train_x_shuffled, train_y_shuffled = train_data[:, :len(train_x[-1, :])], train_data[:, len(train_x[-1, :]):]
 
             # Perform epoch
-            self.perform_one_epoch(train_x_shuffled, train_y_shuffled, lr=lr)
+            self.perform_one_epoch(epoch, train_x_shuffled, train_y_shuffled, lr=lr)
 
             # Calculate errors
-            err, corr_cl = self.calculate_errors(validation_data=validation_data)
+            err, corr_cl = self.calculate_errors(validation_data=validation_data, classification_problem=False)
             self.basic_metrics_history["errors"].append(err)
-            self.basic_metrics_history["correct_classifications"].append(corr_cl)
+            if corr_cl is not None:
+                self.basic_metrics_history["correct_classifications"].append(corr_cl)
             self.calculate_metrics(epoch)
 
             # Check for early stopping

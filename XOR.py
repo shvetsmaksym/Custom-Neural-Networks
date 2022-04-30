@@ -12,16 +12,16 @@ if __name__ == "__main__":
     train_x, train_y = data[:, :2], data[:, 2]
 
     # Define model
-    model = NeuralNetwork()
+    model = NeuralNetwork(classification_problem=True)
     model.add_input_layer(n=2, input_shape=2)
     model.add_output_layer(n=1)
 
     # Compile model
-    model.set_metrics(metrics=['mse', 'acc'])
-    model.set_early_stopping(patience=500, metric_to_monitor='mse', min_delta=0.0001)
+    model.add_metrics(metrics=['mse', 'acc'])
+    model.add_early_stopping(patience=1500, monitor='mse', min_delta=0.0001)
 
     # Fit model
-    model.fit(train_x, train_y, validation_data=(train_x, train_y), lr=0.03, epochs=10000)
+    model.fit(train_x, train_y, validation_data=(train_x, train_y), lr=0.1, epochs=10000)
 
     # Prepare plot
     x1 = np.linspace(-2, 2, 100)

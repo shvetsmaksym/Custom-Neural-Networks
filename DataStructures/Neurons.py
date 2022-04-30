@@ -122,8 +122,7 @@ class Perceptron:
 
 
 class Neuron:
-    def __init__(self, layer, i, input_shape=None, output_neurons=None,
-                 activation_func=UnipolarSigmoid):
+    def __init__(self, layer, i, activation_func, input_shape=None, output_neurons=None):
 
         self.layer = layer      # warstwa
         self.i = i              # numer neuronu w danej warstwie
@@ -132,7 +131,7 @@ class Neuron:
         self.output_neurons = output_neurons
         self.F_net = 0
         self.delta = 0          # sygnał błędu
-        self.activation_function = activation_func(lbd=1.6)
+        self.activation_function = activation_func(lbd=1)
 
         if self.input_shape:
             # First Layer
@@ -149,7 +148,7 @@ class Neuron:
             inputs_with_bias = np.insert(inputs, 0, 1)
         else:
             # 2:L layers - inputs are neurons
-            values = np.array([i.F_net for i in self.layer.prev_layer.neurons])
+            values = np.array([neu.F_net for neu in self.layer.prev_layer.neurons])
             inputs_with_bias = np.insert(values, 0, 1)
 
         net = np.dot(inputs_with_bias, self.weights)
@@ -157,7 +156,7 @@ class Neuron:
 
     def calculate_error_signal(self, out=None):
         if out is not None:
-            # out parameter is only given in the last layer
+            # Last layer
             self.delta = out - self.F_net
         else:
             # Layers 1: L-1

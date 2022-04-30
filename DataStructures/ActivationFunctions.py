@@ -1,5 +1,4 @@
 from random import random
-from math import exp
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -35,7 +34,10 @@ class UnipolarSigmoid(ActivationFunction):
         super().__init__(name, lbd)
 
     def func(self, x):
-        return 1 / (1 + exp(-self.lbd * x))
+        try:
+            return 1 / (1 + np.exp(-self.lbd * x))
+        except OverflowError as e:
+            return 1 / (1 + np.exp(-self.lbd * x / 10))
 
     def derivative(self, x):
         return self.lbd * self.func(x) * (1 - self.func(x))
@@ -46,7 +48,7 @@ class BipolarSigmoid(ActivationFunction):
         super().__init__(name, lbd)
 
     def func(self, x):
-        return 2 / (1 + exp(-self.lbd * x)) - 1
+        return 2 / (1 + np.exp(-self.lbd * x)) - 1
 
     def derivative(self, x):
         return self.lbd * 1/2 * (1 - self.func(x) ** 2)
@@ -56,7 +58,7 @@ if __name__ == "__main__":
     x1, x2 = -2, 2
     lambdas = [0.2, 0.5, 1, 2, 4, 5]
     for l in lambdas:
-        us = BipolarSigmoid(lbd=l)
+        us = UnipolarSigmoid(lbd=l)
         us.plot(x1, x2)
     plt.legend([f"lbd:{l}" for l in lambdas])
     plt.show()
