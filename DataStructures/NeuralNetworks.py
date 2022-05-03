@@ -2,6 +2,7 @@ from DataStructures.Layers import *
 from random import random, sample
 from DataStructures.Preprocessing import one_hot_encoding
 from DataStructures.Callbacks import Metrics, EarlyStopping, is_correct_class, print_progress_bar
+from DataStructures.ActivationFunctions import Gaussian
 
 
 class NeuralNetwork:
@@ -111,8 +112,10 @@ class NeuralNetwork:
 
     def perform_one_epoch(self, epoch, train_x, train_y, lr):
         count = 0
-        train_samples = sample([x for x in range(len(train_x))], 2048)
-        for xi, yi in zip(train_x[train_samples], train_y[train_samples]):
+        # train on sample
+        # train_samples = sample([x for x in range(len(train_x))], 2048)
+        # for xi, yi in zip(train_x[train_samples], train_y[train_samples]):
+        for xi, yi in zip(train_x, train_y):
             self.feed_forward(xi)
             self.propagate_errors(yi)
             self.update_weights(xi=xi, lr=lr)
@@ -147,20 +150,37 @@ class NeuralNetwork:
                     break
 
 
+class RBF:
+    def __init__(self, K, Beta=1):
+        self.K = K  # number of neurons in nonlinear layer
+        self.k_samples = None
+        self.weights = np.zeros(self.K)
+        self.a_func = Gaussian(Beta=Beta)
+
+    def fit(self, train_x, train_y):
+        self.k_samples = np.random.choice(train_x, size=self.K, replace=False)
+
+        # Calculate outputs from radial layer
+        R = np.zeros((len(train_x), self.K))
+        for i, x in enumerate(train_x):
+            for j, c in enumerate(self.k_samples):
+                R[i, j] = self.a_func.func(x, c)
+
+        # Calculate weights
+        self.weights = np.dot(np.linalg.pinv(R), train_y)
+
+    def predict(self, x_):
+        # x_ - array of inputs
+        R = np.zeros((len(x_), self.K))
+        y = np.zeros(len(x_))
+        for i, x in enumerate(x_):
+            for j, c in enumerate(self.k_samples):
+                R[i, j] = self.a_func.func(x, c)
+        y = np.dot(R, self.weights)
+        return y
+
+
 if __name__ == "__main__":
-    X_train = np.array([[random() for i in range(4)] for _ in range(10)])
-    y_train = np.array([1,0,0,1,0,1,0,1,0,1])
-    y_train = one_hot_encoding(y=y_train, classes=2)
-
-    X_test = np.array([[random() for i in range(4)] for _ in range(4)])
-    y_test = np.array([1,0,0,1])
-    y_test = one_hot_encoding(y=y_test, classes=2)
-
-    model = NeuralNetwork()
-    model.add_input_layer(n=8, input_shape=4)
-    model.add_hidden_layer(L=2, n=16)
-    model.add_output_layer(n=2)
-
-    model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50)
-
-    print("Finish.")
+    train_x = np.linspace(-1, 1, 50)
+    train_y = np.sin((train_x + 0.5)**3) + np.random.randn(50) / 10
+    print(train_y)

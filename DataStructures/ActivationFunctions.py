@@ -9,10 +9,10 @@ class ActivationFunction:
         self.lbd = lbd
         self.name = name
 
-    def func(self, x):
+    def func(self, *args):
         pass
 
-    def derivative(self, x):
+    def derivative(self, *args):
         pass
 
     def plot(self, x1, x2, flag=0):
@@ -54,11 +54,23 @@ class BipolarSigmoid(ActivationFunction):
         return self.lbd * 1/2 * (1 - self.func(x) ** 2)
 
 
+class Gaussian(ActivationFunction):
+    def __init__(self, name="Gaussian", Beta=1):
+        super().__init__(name)
+        self.Beta = Beta
+
+    def func(self, x, c):
+        return np.exp(-self.Beta * (x - c) ** 2)
+
+
 if __name__ == "__main__":
-    x1, x2 = -2, 2
-    lambdas = [0.2, 0.5, 1, 2, 4, 5]
-    for l in lambdas:
-        us = UnipolarSigmoid(lbd=l)
-        us.plot(x1, x2)
-    plt.legend([f"lbd:{l}" for l in lambdas])
-    plt.show()
+    g = Gaussian(Beta=2)
+    a = np.random.random(3)
+    g.func()
+    # x1, x2 = -2, 2
+#     # lambdas = [0.2, 0.5, 1, 2, 4, 5]
+#     # for l in lambdas:
+#     #     us = UnipolarSigmoid(lbd=l)
+#     #     us.plot(x1, x2)
+#     # plt.legend([f"lbd:{l}" for l in lambdas])
+#     # plt.show()

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from DataStructures.NeuralNetwork import NeuralNetwork
+from DataStructures.NeuralNetworks import NeuralNetwork
 
 if __name__ == "__main__":
     data = np.array([[-1, -1, 0],

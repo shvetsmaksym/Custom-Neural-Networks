@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from DataStructures.NeuralNetwork import NeuralNetwork
+from DataStructures.NeuralNetworks import NeuralNetwork
 from DataStructures.Preprocessing import one_hot_encoding, normalize, split_into_train_and_test_sets, \
     check_if_classes_balanced
 
