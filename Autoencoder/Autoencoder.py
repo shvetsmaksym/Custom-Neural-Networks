@@ -3,7 +3,7 @@ import numpy as np
 from astropy.nddata import reshape_as_blocks
 import matplotlib.pyplot as plt
 
-from DataStructures.NeuralNetwork import NeuralNetwork
+from DataStructures.NeuralNetworks import NeuralNetwork
 
 
 def load_image():
