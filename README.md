@@ -1,2 +1,2 @@
-# Custom-Neural-Networks
-Basic neural network structures from zero without any ml framework.
+# Custom Neural Networks
+Building Neural Networks from zero without any frameworks.
