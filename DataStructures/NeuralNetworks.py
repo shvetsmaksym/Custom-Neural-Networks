@@ -152,30 +152,32 @@ class NeuralNetwork:
 
 class RBF:
     def __init__(self, K, Beta=1):
+        self.X = None
+        self.Y = None
         self.K = K  # number of neurons in nonlinear layer
         self.k_samples = None
         self.weights = np.zeros(self.K)
         self.a_func = Gaussian(Beta=Beta)
 
-    def fit(self, train_x, train_y):
-        self.k_samples = np.random.choice(train_x, size=self.K, replace=False)
+    def fit(self, X, Y):
+        self.X = X
+        self.Y = Y
+        self.k_samples = np.random.choice(self.X, size=self.K, replace=False)
 
-        # Calculate outputs from radial layer
-        R = np.zeros((len(train_x), self.K))
-        for i, x in enumerate(train_x):
+        R = self.calculate_R_matrix()
+        self.weights = np.dot(np.linalg.pinv(R), Y)
+
+    def calculate_R_matrix(self):
+        """Calculate outputs from radial layer"""
+        R = np.zeros((len(self.X), self.K))
+        for i, x in enumerate(self.X):
             for j, c in enumerate(self.k_samples):
                 R[i, j] = self.a_func.func(x, c)
-
-        # Calculate weights
-        self.weights = np.dot(np.linalg.pinv(R), train_y)
+        return R
 
     def predict(self, x_):
         # x_ - array of inputs
-        R = np.zeros((len(x_), self.K))
-        y = np.zeros(len(x_))
-        for i, x in enumerate(x_):
-            for j, c in enumerate(self.k_samples):
-                R[i, j] = self.a_func.func(x, c)
+        R = self.calculate_R_matrix()
         y = np.dot(R, self.weights)
         return y
 
